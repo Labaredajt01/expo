@@ -1,4 +1,64 @@
----
+---from flask import Flask, render_template, request, redirect, url_for
+import random
+
+app = Flask(__name__)
+
+usuarios = {}  # Dicionário para armazenar o saldo dos usuários
+lucro_dono = 0  # Lucro que ficará para o dono do app
+
+# Função para calcular o lucro da aposta
+def calcular_lucro(valor_apostado, resultado_aposta):
+    # O dono recebe 10% do lucro
+    percentual_dono = 0.10
+    lucro_total = valor_apostado * resultado_aposta
+    lucro_dono = lucro_total * percentual_dono
+    return lucro_total, lucro_dono
+
+@app.route('/')
+def index():
+    return render_template('index.html', usuarios=usuarios)
+
+@app.route('/registrar', methods=['POST'])
+def registrar():
+    nome_usuario = request.form.get('nome')
+    if nome_usuario not in usuarios:
+        usuarios[nome_usuario] = {'saldo': 100}  # Saldo inicial do usuário
+    return redirect(url_for('index'))
+
+@app.route('/apostar', methods=['POST'])
+def apostar():
+    nome_usuario = request.form.get('nome')
+    valor_apostado = float(request.form.get('valor'))
+    
+    if nome_usuario not in usuarios:
+        return "Usuário não registrado!"
+    
+    saldo_usuario = usuarios[nome_usuario]['saldo']
+    
+    if valor_apostado > saldo_usuario:
+        return "Saldo insuficiente!"
+    
+    # Simula o resultado da aposta (1 ou 2 - "ganhou" ou "perdeu")
+    resultado_aposta = random.choice([1.5, 0])  # 1.5 é o valor que o usuário ganha se vencer (lucro 50%)
+    
+    # Atualiza o saldo do usuário
+    lucro_total, lucro_dono = calcular_lucro(valor_apostado, resultado_aposta)
+    saldo_atualizado = saldo_usuario - valor_apostado + lucro_total
+    
+    usuarios[nome_usuario]['saldo'] = saldo_atualizado
+    
+    global lucro_dono
+    lucro_dono += lucro_dono  # Atualiza o lucro do dono
+    
+    return f"Aposta realizada! Seu saldo atual é: {saldo_atualizado}. Lucro do dono: {lucro_dono}"
+
+@app.route('/lucro')
+def lucro():
+    return f"Lucro total do dono: {lucro_dono}"
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 title: Create a project
 description: Learn how to create a new Expo project.
 hideTOC: true
